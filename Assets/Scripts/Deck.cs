@@ -70,8 +70,8 @@ public class Deck : MonoBehaviour
         int valorAuxiliar;
         for (int i = 0; i < 100; i++)
         {
-            int pos1 = Random.RandomRange(0, 52);
-            int pos2 = Random.RandomRange(0, 52);
+            int pos1 = Random.Range(0, 52);
+            int pos2 = Random.Range(0, 52);
 
             if(pos1 != pos2)
             {
@@ -107,6 +107,108 @@ public class Deck : MonoBehaviour
          * - Probabilidad de que el jugador obtenga entre un 17 y un 21 si pide una carta
          * - Probabilidad de que el jugador obtenga más de 21 si pide una carta          
          */
+
+        CardHand jugador = player.GetComponent<CardHand>();
+        CardHand crupier = dealer.GetComponent<CardHand>();
+        float puntosJugador = jugador.points;
+        float puntosCrupier = crupier.points;
+        float cartasPosibles = 0;
+        float puntosNecesarios;
+
+        float prob1 = 0;
+
+        puntosNecesarios = puntosJugador - puntosCrupier;
+
+        if (puntosNecesarios < 0)
+        {
+            prob1 = 1;
+        }
+        else
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (values[i] >= puntosNecesarios)
+                {
+                    cartasPosibles++;
+                }
+            }
+        }
+    
+        prob1 = cartasPosibles / 52;
+        Debug.Log(prob1.ToString());
+
+        float prob2 = 0;
+        cartasPosibles = 0;
+        float cartaMin = 17 - puntosJugador;
+        float cartaMax = 21 - puntosJugador;
+
+        if(puntosJugador >= 21)
+        {
+            prob2 = 0;
+        }
+        else
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (cartaMin < 0 && cartaMax == 0)
+                {
+                    if (values[i] == 11)
+                    {
+                        cartasPosibles++;
+                    }
+                    if (values[i] <= cartaMax)
+                    {
+                        cartasPosibles++;
+                    }
+                }
+                else
+                {
+                    if (values[i] == 11)
+                    {
+                        if (1 >= cartaMin)
+                        {
+                            cartasPosibles++;
+                        }
+                        else if (11 <= cartaMin)
+                        {
+                            cartasPosibles++;
+                        }
+                    }
+                    else if (values[i] >= cartaMin && values[i] <= cartaMax)
+                    {
+                        cartasPosibles++;
+                    }
+                }
+            }
+            prob2 = cartasPosibles / 52;
+        }
+        
+        Debug.Log(prob2.ToString());
+
+        float prob3 = 0;
+        puntosNecesarios = 0;
+        cartasPosibles = 0;
+        if(puntosJugador <= 9)
+        {
+            prob3 = 0;
+        }
+        else
+        {
+            puntosNecesarios = 21 - puntosJugador;
+            for(int i = 0; i < values.Length; i++)
+            {
+                if(values[i] > puntosNecesarios)
+                {
+                    cartasPosibles++;
+                }
+            }
+        }
+        prob3 = cartasPosibles / 52;
+        Debug.Log(prob3.ToString());
+
+
+        probMessage.text = "Probabilidad 1 = " + prob1.ToString() + " Probabilidad 2 = " + prob2.ToString() + " Probabilidad 3 = " + prob3.ToString();
+
     }
 
     void PushDealer()
@@ -133,21 +235,19 @@ public class Deck : MonoBehaviour
         /*TODO: 
          * Si estamos en la mano inicial, debemos voltear la primera carta del dealer.
          */
-        if(showFirstCard == false)
-        {
+        
+        /*
             CardHand cardD = dealer.GetComponent<CardHand>();
             cardD.cards[0].GetComponent<CardModel>().ToggleFace(true);
             showFirstCard = true;
-        }
-        else
-        {
+        */
+
             //Repartimos carta al jugador
             PushPlayer();
-
+        
             /*TODO:
              * Comprobamos si el jugador ya ha perdido y mostramos mensaje
              */
-        }
 
     }
 
