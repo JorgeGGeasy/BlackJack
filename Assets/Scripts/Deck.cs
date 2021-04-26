@@ -11,6 +11,7 @@ public class Deck : MonoBehaviour
     public Button playAgainButton;
     public Text finalMessage;
     public Text probMessage;
+    public bool showFirstCard = false;
 
     public int[] values = new int[52];
     int cardIndex = 0;    
@@ -34,6 +35,27 @@ public class Deck : MonoBehaviour
          * En principio, la posición de cada valor se deberá corresponder con la posición de faces. 
          * Por ejemplo, si en faces[1] hay un 2 de corazones, en values[1] debería haber un 2.
          */
+        int valor = 0;
+        for(int i = 0; i < 52; i++)
+        {
+            if(i == 0 || i == 13 || i == 26 || i == 39)
+            {
+                values[i] = 11;
+                valor = 2;
+            }
+            else
+            {
+                if (valor > 10)
+                {
+                    valor = 10;
+                }
+                values[i] = valor;
+                valor++;
+            }
+            Debug.Log(values[i].ToString());
+        }
+
+
     }
 
     private void ShuffleCards()
@@ -91,13 +113,21 @@ public class Deck : MonoBehaviour
         /*TODO: 
          * Si estamos en la mano inicial, debemos voltear la primera carta del dealer.
          */
-        
-        //Repartimos carta al jugador
-        PushPlayer();
+        if(showFirstCard == false)
+        {
+            CardHand cardD = dealer.GetComponent<CardHand>();
+            cardD.cards[0].GetComponent<CardModel>().ToggleFace(true);
+            showFirstCard = true;
+        }
+        else
+        {
+            //Repartimos carta al jugador
+            PushPlayer();
 
-        /*TODO:
-         * Comprobamos si el jugador ya ha perdido y mostramos mensaje
-         */      
+            /*TODO:
+             * Comprobamos si el jugador ya ha perdido y mostramos mensaje
+             */
+        }
 
     }
 
