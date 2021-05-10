@@ -135,7 +135,7 @@ public class Deck : MonoBehaviour
         }
     
         prob1 = cartasPosibles / 52;
-        Debug.Log(prob1.ToString());
+        //Debug.Log(prob1.ToString());
 
         float prob2 = 0;
         cartasPosibles = 0;
@@ -183,7 +183,7 @@ public class Deck : MonoBehaviour
             prob2 = cartasPosibles / 52;
         }
         
-        Debug.Log(prob2.ToString());
+        //Debug.Log(prob2.ToString());
 
         float prob3 = 0;
         puntosNecesarios = 0;
@@ -204,7 +204,7 @@ public class Deck : MonoBehaviour
             }
         }
         prob3 = cartasPosibles / 52;
-        Debug.Log(prob3.ToString());
+        //Debug.Log(prob3.ToString());
 
 
         probMessage.text = "Probabilidad 1 = " + prob1.ToString() + " Probabilidad 2 = " + prob2.ToString() + " Probabilidad 3 = " + prob3.ToString();
@@ -232,23 +232,36 @@ public class Deck : MonoBehaviour
 
     public void Hit()
     {
-        /*TODO: 
-         * Si estamos en la mano inicial, debemos voltear la primera carta del dealer.
+        /*TODO:
+         * Comprobamos si el jugador ya ha perdido y mostramos mensaje
          */
         
         /*
+        if (player.GetComponent<CardHand>().points >= 21)
+        {
             CardHand cardD = dealer.GetComponent<CardHand>();
             cardD.cards[0].GetComponent<CardModel>().ToggleFace(true);
             showFirstCard = true;
+        }
         */
-
+        
+        if (player.GetComponent<CardHand>().points < 21)
+        {
             //Repartimos carta al jugador
             PushPlayer();
-        
-            /*TODO:
-             * Comprobamos si el jugador ya ha perdido y mostramos mensaje
-             */
+        }
 
+        else if (player.GetComponent<CardHand>().points == 21)
+        {
+            finalMessage.text = "BlackJack";
+            Stand();
+        }
+
+        else if (player.GetComponent<CardHand>().points > 21)
+        {
+            finalMessage.text = "Perdiste";
+            Stand();
+        }
     }
 
     public void Stand()
@@ -256,7 +269,6 @@ public class Deck : MonoBehaviour
         /*TODO: 
          * Si estamos en la mano inicial, debemos voltear la primera carta del dealer.
          */
-
         /*TODO:
          * Repartimos cartas al dealer si tiene 16 puntos o menos
          * El dealer se planta al obtener 17 puntos o más
