@@ -10,6 +10,9 @@ public class Deck : MonoBehaviour
     public Button hitButton;
     public Button stickButton;
     public Button playAgainButton;
+    public Button aumentar;
+    public Button reducir;
+    public Button allIn;
     public Text finalMessage;
     public Text probMessage;
     public Text playerMessage;
@@ -22,22 +25,26 @@ public class Deck : MonoBehaviour
 
     // Banca = 1000
     public int banca = 1000;
-    // Apuesta minima = 10
-    public int apuesta = 10;
+    // Apuesta minima = 0
+    public int apuestaMinima;
+    private int apuesta;
 
     public int[] values = new int[52];
     int cardIndex = 0;    
        
     private void Awake()
     {    
-        InitCardValues();        
+        InitCardValues();
 
     }
 
     private void Start()
     {
         ShuffleCards();
-        StartGame();        
+        StartGame();
+        // Ponemos la apuesta minima en mesa
+        apuesta = apuestaMinima;
+        apuestaMessage.text = "Apuesta = " + apuesta.ToString();
     }
 
     private void InitCardValues()
@@ -47,6 +54,8 @@ public class Deck : MonoBehaviour
          * En principio, la posición de cada valor se deberá corresponder con la posición de faces. 
          * Por ejemplo, si en faces[1] hay un 2 de corazones, en values[1] debería haber un 2.
          */
+
+
         int valor = 0;
         for(int i = 0; i < 52; i++)
         {
@@ -79,13 +88,17 @@ public class Deck : MonoBehaviour
          */
         Sprite auxiliar;
         int valorAuxiliar;
+        
         for (int i = 0; i < 100; i++)
         {
+            // Creo dos pos para referenciar puntos en el array
             int pos1 = Random.Range(0, 52);
             int pos2 = Random.Range(0, 52);
 
+            // Si son diferentes los mezclo
             if(pos1 != pos2)
             {
+                // Mezclo tanto valores como sprites para que sigan su relación original
                 auxiliar = faces[pos1];
                 faces[pos1] = faces[pos2];
                 faces[pos2] = auxiliar;
@@ -100,13 +113,31 @@ public class Deck : MonoBehaviour
 
     void StartGame()
     {
+        /*TODO:
+        * Si alguno de los dos obtiene Blackjack, termina el juego y mostramos mensaje
+        */
+
         for (int i = 0; i < 2; i++)
         {
             PushPlayer();
             PushDealer();
-            /*TODO:
-             * Si alguno de los dos obtiene Blackjack, termina el juego y mostramos mensaje
-             */
+
+            // Compruebo al player
+            if(player.GetComponent<CardHand>().points == 21)
+            {
+                finalMessage.text = "BlackJack";
+                desactivarBotones();
+            }
+
+            //El dealer es comprobado cuando gire su carta
+            if(dealer.GetComponent<CardHand>().points == 21)
+            {
+                CardHand cardD = dealer.GetComponent<CardHand>();
+                cardD.cards[0].GetComponent<CardModel>().ToggleFace(true);
+                showFirstCard = true;
+                finalMessage.text = "BlackJack";
+                desactivarBotones();
+            }
         }
     }
 
@@ -238,6 +269,7 @@ public class Deck : MonoBehaviour
          */
         player.GetComponent<CardHand>().Push(faces[cardIndex], values[cardIndex]/*,cardCopy*/);
         cardIndex++;
+        // Calculo las nuevas probabilidades
         CalculateProbabilities();
     }       
 
@@ -246,26 +278,32 @@ public class Deck : MonoBehaviour
         /*TODO:
          * Comprobamos si el jugador ya ha perdido y mostramos mensaje
          */
+        // Primero compruebo si he caido en bancarrota
         bancarrota = comprobarBancarrota();
         if (!bancarrota)
         {
+            // Compruebo si es la primera vez que he golpeado el boton para confirmar la apuesta
             comprobarFirstHit();
+
+            // Si no me he pasado de 21 o tengo 21 puedo pedir carta.
             if (player.GetComponent<CardHand>().points < 21)
             {
                 //Repartimos carta al jugador
                 PushPlayer();
             }
-
+            // Si he llegado a 21 gano
             if (player.GetComponent<CardHand>().points == 21)
             {
-                finalMessage.text = "BlackJack";
-                Stand();
+                finalMessage.text = "Ganas";
+                desactivarBotones();
+                //Stand();
             }
-
+            // Si me he pasado de 21 pierdo
             if (player.GetComponent<CardHand>().points > 21)
             {
                 finalMessage.text = "Perdiste";
-                Stand();
+                desactivarBotones();
+                //Stand();
             }
 
             playerMessage.text = player.GetComponent<CardHand>().points.ToString();
@@ -278,24 +316,30 @@ public class Deck : MonoBehaviour
         /*TODO: 
          * Si estamos en la mano inicial, debemos voltear la primera carta del dealer.
          */
+        // Primero compruebo si he caido en bancarrota
         bancarrota = comprobarBancarrota();
         if (!bancarrota)
         {
+            // Compruebo si es la primera vez que he golpeado el boton para confirmar la apuesta
             comprobarFirstHit();
+            desactivarBotones();
             CardHand cardD = dealer.GetComponent<CardHand>();
+            // Enseño la primera carta
             if (showFirstCard == false)
             {
                 cardD.cards[0].GetComponent<CardModel>().ToggleFace(true);
                 showFirstCard = true;
             }
 
+            // Saco cartas hasta tener 16 puntos o mas
             while (dealer.GetComponent<CardHand>().points <= 16)
             {
+                // Si tengo más puntos que el jugador paro
                 if (player.GetComponent<CardHand>().points < dealer.GetComponent<CardHand>().points)
                 {
                     break;
                 }
-
+                // Si me paso de 21 paro
                 else if (player.GetComponent<CardHand>().points > 21)
                 {
                     break;
@@ -304,36 +348,43 @@ public class Deck : MonoBehaviour
                 PushDealer();
             }
 
+            // Si el jugador tiene más de 21 puntos y el dealer tiene menos o 21 gana
             if (player.GetComponent<CardHand>().points > 21 && dealer.GetComponent<CardHand>().points <= 21)
             {
                 finalMessage.text = "Dealer gana";
             }
+            // Si el jugador tiene más de 21 puntos y el dealer tiene mas de 21 puntos empate
             else if (player.GetComponent<CardHand>().points > 21 && dealer.GetComponent<CardHand>().points > 21)
             {
                 finalMessage.text = "Empate";
                 banca = banca + apuesta;
                 bancaMessage.text = "Banca = " + banca.ToString();
             }
+            // Si el jugador tiene 21 puntos o menos y el dealer se pasa de 21
             else if (player.GetComponent<CardHand>().points <= 21 && dealer.GetComponent<CardHand>().points > 21)
             {
                 finalMessage.text = "Jugador gana";
                 banca = banca + apuesta*2;
                 bancaMessage.text = "Banca = " + banca.ToString();
             }
+            // Si los dos tienen menos de 21
             else if (player.GetComponent<CardHand>().points <= 21 && dealer.GetComponent<CardHand>().points <= 21)
             {
+                // Si el jugador tiene mas puntos que el dealer
                 if (player.GetComponent<CardHand>().points > dealer.GetComponent<CardHand>().points)
                 {
                     finalMessage.text = "Jugador gana";
                     banca = banca + apuesta * 2;
                     bancaMessage.text = "Banca = " + banca.ToString();
                 }
+                // Si tienen los mismos puntos
                 else if (player.GetComponent<CardHand>().points == dealer.GetComponent<CardHand>().points)
                 {
                     finalMessage.text = "Empate";
                     banca = banca + apuesta;
                     bancaMessage.text = "Banca = " + banca.ToString();
                 }
+                // Si el dealer tiene mas puntos que el jugador
                 else if (player.GetComponent<CardHand>().points < dealer.GetComponent<CardHand>().points)
                 {
                     finalMessage.text = "Dealer gana";
@@ -342,13 +393,6 @@ public class Deck : MonoBehaviour
 
             playerMessage.text = player.GetComponent<CardHand>().points.ToString();
             dealerMessage.text = dealer.GetComponent<CardHand>().points.ToString();
-
-            /*
-            if (player.GetComponent<CardHand>().points >= 21)
-            {
-                cardD.cards[0].GetComponent<CardModel>().ToggleFace(true);
-            }
-            */
 
             /*TODO:
              * Repartimos cartas al dealer si tiene 16 puntos o menos
@@ -361,6 +405,7 @@ public class Deck : MonoBehaviour
 
     public void Aumentar ()
     {
+        // Aumento mi apuesta si tengo dinero suficiente
         if(!((apuesta + 10) > banca))
         {
             apuesta = apuesta + 10;
@@ -370,7 +415,8 @@ public class Deck : MonoBehaviour
 
     public void Reducir()
     {
-        if(!((apuesta-10) < 10))
+        // Reduzco mi apuesta a menos que sea más baja que la apuesta minima
+        if(!((apuesta-10) < apuestaMinima))
         {
             apuesta = apuesta - 10;
             apuestaMessage.text = "Apuesta = " + apuesta.ToString();
@@ -379,12 +425,14 @@ public class Deck : MonoBehaviour
 
     public void AllIn()
     {
+        // Lo apuesto todo
         apuesta = banca;
         apuestaMessage.text = "Apuesta = " + apuesta.ToString();
     }
 
     public void comprobarFirstHit()
     {
+        // Compruebo si es la primera vez que el jugador pulsa hit, stand o play again para oficializar la apuesta
         if(firstHit == false)
         {
             banca = banca - apuesta;
@@ -394,10 +442,16 @@ public class Deck : MonoBehaviour
             }
             bancaMessage.text = "Banca = " + banca.ToString();
             firstHit = true;
+
+            aumentar.interactable = false;
+            reducir.interactable = false;
+            allIn.interactable = false;
+
         }
     }
     public bool comprobarBancarrota()
     {
+        // Si cuando no he pulsado el boton tengo 0 significa que no puedo apostar y lo he perdido todo
         if (firstHit == false)
         {
             if (banca == 0)
@@ -409,12 +463,34 @@ public class Deck : MonoBehaviour
         return false;
     }
 
-    public void PlayAgain()
+    public void desactivarBotones()
     {
-        bancarrota = comprobarBancarrota();
-        comprobarFirstHit();
+        // Desactivo botones
+        hitButton.interactable = false;
+        stickButton.interactable = false;
+        aumentar.interactable = false;
+        reducir.interactable = false;
+        allIn.interactable = false;
+    }
+    public void activarBotones()
+    {
+        // Activo botones
         hitButton.interactable = true;
         stickButton.interactable = true;
+        aumentar.interactable = true;
+        reducir.interactable = true;
+        allIn.interactable = true;
+    }
+    public void PlayAgain()
+    {
+        // Compruebo la bancarrota y el firstHit
+        bancarrota = comprobarBancarrota();
+        comprobarFirstHit();
+
+        // Activo botones
+        activarBotones();
+
+        // Limpio bariables
         finalMessage.text = "";
         player.GetComponent<CardHand>().Clear();
         dealer.GetComponent<CardHand>().Clear();
@@ -423,14 +499,16 @@ public class Deck : MonoBehaviour
         playerMessage.text = "";
         dealerMessage.text = "";
         cardIndex = 0;
-        apuesta = 10;
+        apuesta = apuestaMinima;
         apuestaMessage.text = "Apuesta = " + apuesta.ToString();
+        // Si no estoy en bancarrota empieza el juego, si no, no puedo jugar
         if (!bancarrota) {
             ShuffleCards();
             StartGame();
         }
         else
         {
+            playAgainButton.interactable = false;
             finalMessage.text = "Bancarrota";
         }
 
