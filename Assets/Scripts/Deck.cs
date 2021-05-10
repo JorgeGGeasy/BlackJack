@@ -14,8 +14,16 @@ public class Deck : MonoBehaviour
     public Text probMessage;
     public Text playerMessage;
     public Text dealerMessage;
+    public Text bancaMessage;
+    public Text apuestaMessage;
     public bool showFirstCard = false;
+    public bool firstHit = false;
+    public bool bancarrota = false;
+
+    // Banca = 1000
     public int banca = 1000;
+    // Apuesta minima = 10
+    public int apuesta = 10;
 
     public int[] values = new int[52];
     int cardIndex = 0;    
@@ -238,26 +246,30 @@ public class Deck : MonoBehaviour
         /*TODO:
          * Comprobamos si el jugador ya ha perdido y mostramos mensaje
          */
-        
-        if (player.GetComponent<CardHand>().points < 21)
+        bancarrota = comprobarBancarrota();
+        if (!bancarrota)
         {
-            //Repartimos carta al jugador
-            PushPlayer();
-        }
+            comprobarFirstHit();
+            if (player.GetComponent<CardHand>().points < 21)
+            {
+                //Repartimos carta al jugador
+                PushPlayer();
+            }
 
-        if (player.GetComponent<CardHand>().points == 21)
-        {
-            finalMessage.text = "BlackJack";
-            Stand();
-        }
+            if (player.GetComponent<CardHand>().points == 21)
+            {
+                finalMessage.text = "BlackJack";
+                Stand();
+            }
 
-        if (player.GetComponent<CardHand>().points > 21)
-        {
-            finalMessage.text = "Perdiste";
-            Stand();
-        }
+            if (player.GetComponent<CardHand>().points > 21)
+            {
+                finalMessage.text = "Perdiste";
+                Stand();
+            }
 
-        playerMessage.text = player.GetComponent<CardHand>().points.ToString();
+            playerMessage.text = player.GetComponent<CardHand>().points.ToString();
+        }
 
     }
 
@@ -266,87 +278,162 @@ public class Deck : MonoBehaviour
         /*TODO: 
          * Si estamos en la mano inicial, debemos voltear la primera carta del dealer.
          */
-        CardHand cardD = dealer.GetComponent<CardHand>();
-        if(showFirstCard == false)
+        bancarrota = comprobarBancarrota();
+        if (!bancarrota)
         {
-            cardD.cards[0].GetComponent<CardModel>().ToggleFace(true);
-            showFirstCard = true;
-        }
-
-        while(dealer.GetComponent<CardHand>().points <= 16)
-        {
-            if (player.GetComponent<CardHand>().points < dealer.GetComponent<CardHand>().points)
+            comprobarFirstHit();
+            CardHand cardD = dealer.GetComponent<CardHand>();
+            if (showFirstCard == false)
             {
-                break;
+                cardD.cards[0].GetComponent<CardModel>().ToggleFace(true);
+                showFirstCard = true;
             }
 
-            else if(player.GetComponent<CardHand>().points > 21)
+            while (dealer.GetComponent<CardHand>().points <= 16)
             {
-                break;
+                if (player.GetComponent<CardHand>().points < dealer.GetComponent<CardHand>().points)
+                {
+                    break;
+                }
+
+                else if (player.GetComponent<CardHand>().points > 21)
+                {
+                    break;
+                }
+
+                PushDealer();
             }
 
-            PushDealer();
-        }
-
-        if(player.GetComponent<CardHand>().points > 21 && dealer.GetComponent<CardHand>().points <= 21)
-        {
-            finalMessage.text = "Dealer gana";
-        }
-        else if (player.GetComponent<CardHand>().points > 21 && dealer.GetComponent<CardHand>().points > 21)
-        {
-            finalMessage.text = "Empate";
-        }
-        else if (player.GetComponent<CardHand>().points <= 21 && dealer.GetComponent<CardHand>().points > 21)
-        {
-            finalMessage.text = "Jugador gana";
-        }
-        else if (player.GetComponent<CardHand>().points <= 21 && dealer.GetComponent<CardHand>().points <= 21)
-        {
-            if (player.GetComponent<CardHand>().points > dealer.GetComponent<CardHand>().points)
-            {
-                finalMessage.text = "Jugador gana";
-            }
-            else if (player.GetComponent<CardHand>().points == dealer.GetComponent<CardHand>().points)
-            {
-                finalMessage.text = "Empate";
-            }
-            else if (player.GetComponent<CardHand>().points < dealer.GetComponent<CardHand>().points)
+            if (player.GetComponent<CardHand>().points > 21 && dealer.GetComponent<CardHand>().points <= 21)
             {
                 finalMessage.text = "Dealer gana";
             }
+            else if (player.GetComponent<CardHand>().points > 21 && dealer.GetComponent<CardHand>().points > 21)
+            {
+                finalMessage.text = "Empate";
+                banca = banca + apuesta;
+                bancaMessage.text = "Banca = " + banca.ToString();
+            }
+            else if (player.GetComponent<CardHand>().points <= 21 && dealer.GetComponent<CardHand>().points > 21)
+            {
+                finalMessage.text = "Jugador gana";
+                banca = banca + apuesta*2;
+                bancaMessage.text = "Banca = " + banca.ToString();
+            }
+            else if (player.GetComponent<CardHand>().points <= 21 && dealer.GetComponent<CardHand>().points <= 21)
+            {
+                if (player.GetComponent<CardHand>().points > dealer.GetComponent<CardHand>().points)
+                {
+                    finalMessage.text = "Jugador gana";
+                    banca = banca + apuesta * 2;
+                    bancaMessage.text = "Banca = " + banca.ToString();
+                }
+                else if (player.GetComponent<CardHand>().points == dealer.GetComponent<CardHand>().points)
+                {
+                    finalMessage.text = "Empate";
+                    banca = banca + apuesta;
+                    bancaMessage.text = "Banca = " + banca.ToString();
+                }
+                else if (player.GetComponent<CardHand>().points < dealer.GetComponent<CardHand>().points)
+                {
+                    finalMessage.text = "Dealer gana";
+                }
+            }
+
+            playerMessage.text = player.GetComponent<CardHand>().points.ToString();
+            dealerMessage.text = dealer.GetComponent<CardHand>().points.ToString();
+
+            /*
+            if (player.GetComponent<CardHand>().points >= 21)
+            {
+                cardD.cards[0].GetComponent<CardModel>().ToggleFace(true);
+            }
+            */
+
+            /*TODO:
+             * Repartimos cartas al dealer si tiene 16 puntos o menos
+             * El dealer se planta al obtener 17 puntos o más
+             * Mostramos el mensaje del que ha ganado
+             */
+
         }
+    }
 
-        playerMessage.text = player.GetComponent<CardHand>().points.ToString();
-        dealerMessage.text = dealer.GetComponent<CardHand>().points.ToString();
-
-        /*
-        if (player.GetComponent<CardHand>().points >= 21)
+    public void Aumentar ()
+    {
+        if(!((apuesta + 10) > banca))
         {
-            cardD.cards[0].GetComponent<CardModel>().ToggleFace(true);
+            apuesta = apuesta + 10;
+            apuestaMessage.text = "Apuesta = " + apuesta.ToString();
         }
-        */
+    }
 
-        /*TODO:
-         * Repartimos cartas al dealer si tiene 16 puntos o menos
-         * El dealer se planta al obtener 17 puntos o más
-         * Mostramos el mensaje del que ha ganado
-         */
+    public void Reducir()
+    {
+        if(!((apuesta-10) < 10))
+        {
+            apuesta = apuesta - 10;
+            apuestaMessage.text = "Apuesta = " + apuesta.ToString();
+        }
+    }
 
+    public void AllIn()
+    {
+        apuesta = banca;
+        apuestaMessage.text = "Apuesta = " + apuesta.ToString();
+    }
+
+    public void comprobarFirstHit()
+    {
+        if(firstHit == false)
+        {
+            banca = banca - apuesta;
+            if(banca < 0)
+            {
+                banca = 0;
+            }
+            bancaMessage.text = "Banca = " + banca.ToString();
+            firstHit = true;
+        }
+    }
+    public bool comprobarBancarrota()
+    {
+        if (firstHit == false)
+        {
+            if (banca == 0)
+            {
+                finalMessage.text = "Bancarrota";
+                return true;
+            }
+        }
+        return false;
     }
 
     public void PlayAgain()
     {
+        bancarrota = comprobarBancarrota();
+        comprobarFirstHit();
         hitButton.interactable = true;
         stickButton.interactable = true;
         finalMessage.text = "";
         player.GetComponent<CardHand>().Clear();
         dealer.GetComponent<CardHand>().Clear();
         showFirstCard = false;
+        firstHit = false;
         playerMessage.text = "";
         dealerMessage.text = "";
         cardIndex = 0;
-        ShuffleCards();
-        StartGame();
+        apuesta = 10;
+        apuestaMessage.text = "Apuesta = " + apuesta.ToString();
+        if (!bancarrota) {
+            ShuffleCards();
+            StartGame();
+        }
+        else
+        {
+            finalMessage.text = "Bancarrota";
+        }
+
     }
     
 }
