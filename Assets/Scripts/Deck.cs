@@ -42,6 +42,7 @@ public class Deck : MonoBehaviour
     {
         ShuffleCards();
         StartGame();
+        CalculateProbabilities();
         // Ponemos la apuesta minima en mesa
         apuesta = apuestaMinima;
         apuestaMessage.text = "Apuesta = " + apuesta.ToString();
@@ -158,6 +159,11 @@ public class Deck : MonoBehaviour
         float puntosNecesarios;
 
         float prob1 = 0;
+
+        if(crupier.cards.Count >= 2)
+        {
+            puntosCrupier = puntosCrupier - crupier.cards[0].GetComponent<CardModel>().value;
+        }
 
         puntosNecesarios = puntosJugador - puntosCrupier;
 
